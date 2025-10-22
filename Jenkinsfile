@@ -112,8 +112,8 @@ pipeline {
                         # Update Chart.yaml version using sed
                         sed -i "s/^version: .*/version: $LATEST_TAG/" ${CHART_DIR}/Chart.yaml
 
-                        # Update values.yaml image.tag using sed (assumes '  tag: old' format)
-                        sed -i "s/^  *tag: .*/  tag: $LATEST_TAG/" ${CHART_DIR}/values.yaml
+                        # Update values.yaml image.tag using sed (only match main image tag, not redis tag)
+                        sed -i "/^image:/,/^[a-zA-Z]/ s/^  tag: .*/  tag: \"$LATEST_TAG\"/" ${CHART_DIR}/values.yaml
 
                         mkdir -p charts
                         helm package ${CHART_DIR} --destination charts
