@@ -112,8 +112,23 @@ pipeline {
                         # Update Chart.yaml version using sed
                         sed -i "s/^version: .*/version: $LATEST_TAG/" ${CHART_DIR}/Chart.yaml
 
-                        # Update values.yaml image.tag using sed (only match main image tag, not redis tag)
-                        sed -i "/^image:/,/^[a-zA-Z]/ s/^  tag: .*/  tag: \"$LATEST_TAG\"/" ${CHART_DIR}/values.yaml
+                        # Update values.yaml image.tag using Python to avoid YAML corruption
+                        python3 -c "
+import yaml
+import sys
+
+# Read the YAML file
+with open('${CHART_DIR}/values.yaml', 'r') as f:
+    data = yaml.safe_load(f)
+
+# Update the main image tag (not redis tag)
+if 'image' in data and 'tag' in data['image']:
+    data['image']['tag'] = '${LATEST_TAG}'
+
+# Write back to file
+with open('${CHART_DIR}/values.yaml', 'w') as f:
+    yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+"
 
                         mkdir -p charts
                         helm package ${CHART_DIR} --destination charts
