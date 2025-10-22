@@ -112,31 +112,12 @@ pipeline {
                         # Update Chart.yaml version using sed
                         sed -i "s/^version: .*/version: $LATEST_TAG/" ${CHART_DIR}/Chart.yaml
 
-                        # Update values.yaml image.tag using Python to avoid YAML corruption
-                        python3 -c "
-import yaml
-import sys
-
-try:
-    # Read the YAML file
-    with open('${CHART_DIR}/values.yaml', 'r') as f:
-        data = yaml.safe_load(f)
-
-    # Update the main image tag (not redis tag)
-    if 'image' in data and 'tag' in data['image']:
-        data['image']['tag'] = '${LATEST_TAG}'
-
-    # Write back to file
-    with open('${CHART_DIR}/values.yaml', 'w') as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    print('YAML updated successfully')
-except Exception as e:
-    print(f'Python YAML update failed: {e}')
-    # Fallback to sed with more specific pattern
-    import subprocess
-    subprocess.run(['sed', '-i', 's/^  tag: .*/  tag: \"${LATEST_TAG}\"/', '${CHART_DIR}/values.yaml'])
-    print('Fallback sed update completed')
-"
+                        # Update values.yaml image.tag using a more specific sed pattern
+                        # First, let's restore the file from git to ensure clean state
+                        git checkout HEAD -- ${CHART_DIR}/values.yaml
+                        
+                        # Use a very specific sed pattern that only matches the main image tag
+                        sed -i '/^image:/,/^[a-zA-Z]/ { /^  tag: / s/.*/  tag: \"${LATEST_TAG}\"/ }' ${CHART_DIR}/values.yaml
 
                         mkdir -p charts
                         helm package ${CHART_DIR} --destination charts
