@@ -18,16 +18,16 @@ pipeline {
                         script: '''
                             #!/bin/bash
                             set -e
-                            echo "🔍 Fetching latest image tag from source registry..." >&2
+                            echo " Fetching latest image tag from source registry..." >&2
                             TAG_JSON=$(curl -s https://us-central1-docker.pkg.dev/v2/google-samples/microservices-demo/productcatalogservice/tags/list)
                             LATEST_TAG=$(echo "$TAG_JSON" | jq -r '.tags[]' | sort | tail -n 1)
 
                             if [ -z "$LATEST_TAG" ]; then
-                                echo "❌ Failed to get latest tag!" >&2
+                                echo " Failed to get latest tag!" >&2
                                 exit 1
                             fi
 
-                            echo "✅ Latest tag detected: $LATEST_TAG" >&2
+                            echo " Latest tag detected: $LATEST_TAG" >&2
                             echo "$LATEST_TAG"
                         ''',
                         returnStdout: true
@@ -43,20 +43,20 @@ pipeline {
                         #!/bin/bash
                         set -e
 
-                        echo "🔐 Logging in to ECR..."
+                        echo " Logging in to ECR..."
                         aws configure set default.region ${AWS_REGION}
                         aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
 
-                        echo "🧭 Ensuring ECR repository exists..."
+                        echo " Ensuring ECR repository exists..."
                         aws ecr describe-repositories --repository-names ${REPO_NAME} --region ${AWS_REGION} || \
                             aws ecr create-repository --repository-name ${REPO_NAME} --region ${AWS_REGION}
 
-                        echo "🔎 Checking if ${LATEST_TAG} already exists in ECR..."
+                        echo " Checking if ${LATEST_TAG} already exists in ECR..."
                         if aws ecr describe-images --repository-name ${REPO_NAME} --region ${AWS_REGION} \
                             --query 'imageDetails[].imageTags[]' --output text | grep -w "${LATEST_TAG}"; then
-                            echo "✅ Tag ${LATEST_TAG} already exists in ECR. Skipping pull and push."
+                            echo " Tag ${LATEST_TAG} already exists in ECR. Skipping pull and push."
                         else
-                            echo "⬇️ Pulling image from GCP and pushing to ECR..."
+                            echo " Pulling image from GCP and pushing to ECR..."
                             docker pull ${SOURCE_IMAGE}:${LATEST_TAG}
                             docker tag ${SOURCE_IMAGE}:${LATEST_TAG} ${ECR_URI}/${REPO_NAME}:${LATEST_TAG}
                             docker push ${ECR_URI}/${REPO_NAME}:${LATEST_TAG}
@@ -73,13 +73,13 @@ pipeline {
                         #!/bin/bash
                         set -e
 
-                        echo "🔎 Verifying image presence in ECR..."
+                        echo " Verifying image presence in ECR..."
                         aws configure set default.region ${AWS_REGION}
                         if aws ecr describe-images --repository-name ${REPO_NAME} --region ${AWS_REGION} \
                             --query 'imageDetails[*].imageTags' | grep -q "${LATEST_TAG}"; then
-                            echo "✅ Sync Verified!"
+                            echo " Sync Verified!"
                         else
-                            echo "❌ Sync verification failed!"
+                            echo " Sync verification failed!"
                             exit 1
                         fi
                     '''
@@ -96,7 +96,7 @@ pipeline {
 
                         # Clone repo if not present
                         if [ ! -d "microservice-helm-charts" ]; then
-                            echo "📥 Cloning GitHub repo..."
+                            echo " Cloning GitHub repo..."
                             git clone ${GITHUB_REPO}
                             cd microservice-helm-charts
                         else
