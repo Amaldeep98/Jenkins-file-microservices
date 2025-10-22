@@ -117,17 +117,25 @@ pipeline {
 import yaml
 import sys
 
-# Read the YAML file
-with open('${CHART_DIR}/values.yaml', 'r') as f:
-    data = yaml.safe_load(f)
+try:
+    # Read the YAML file
+    with open('${CHART_DIR}/values.yaml', 'r') as f:
+        data = yaml.safe_load(f)
 
-# Update the main image tag (not redis tag)
-if 'image' in data and 'tag' in data['image']:
-    data['image']['tag'] = '${LATEST_TAG}'
+    # Update the main image tag (not redis tag)
+    if 'image' in data and 'tag' in data['image']:
+        data['image']['tag'] = '${LATEST_TAG}'
 
-# Write back to file
-with open('${CHART_DIR}/values.yaml', 'w') as f:
-    yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    # Write back to file
+    with open('${CHART_DIR}/values.yaml', 'w') as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    print('YAML updated successfully')
+except Exception as e:
+    print(f'Python YAML update failed: {e}')
+    # Fallback to sed with more specific pattern
+    import subprocess
+    subprocess.run(['sed', '-i', 's/^  tag: .*/  tag: \"${LATEST_TAG}\"/', '${CHART_DIR}/values.yaml'])
+    print('Fallback sed update completed')
 "
 
                         mkdir -p charts
