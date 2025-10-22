@@ -60,12 +60,14 @@ Each Jenkins pipeline includes:
 ## Usage
 
 1. **Clone the repository**:
+
    ```bash
    git clone git@github.com:Amaldeep98/Jenkins-file-microservices.git
    cd Jenkins-file-microservices
    ```
 
 2. **Checkout the desired microservice branch**:
+
    ```bash
    git checkout adservice
    ```
